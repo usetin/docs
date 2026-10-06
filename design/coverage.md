@@ -1,7 +1,7 @@
 # Go coverage: what Tin has, and what it still needs
 
 Generated from `design/coverage.md` by `tools/gen/gencoverage.tin`; edit the source and
-regenerate `docs/COVERAGE.md` to publish inventory changes.
+regenerate `toolchain/docs/COVERAGE.md` to publish inventory changes.
 
 The goal is a language in which everything Go's built-ins and standard library let a program do can be done, written in Tin. That is a goal about capabilities, not about copying Go: where Go's shape needs something Tin has chosen not to have (interfaces, reflection, shared mutable state), the entry says what takes its place. This page is the checklist. Update it in the same change that adds or removes a capability.
 
@@ -22,7 +22,7 @@ The inventory is the 176 packages `go list std` reports for Go 1.26 (without `in
 
 | Go | Tin | status |
 |---|---|---|
-| `append`, `cap`, `copy`, `delete`, `len`, `make`, `new`, `panic`, `print`, `println` | the same (docs/LANGUAGE.md section 13); `make` covers slices and maps | done |
+| `append`, `cap`, `copy`, `delete`, `len`, `make`, `new`, `panic`, `print`, `println` | the same (toolchain/docs/LANGUAGE.md section 13); `make` covers slices and maps | done |
 | `min`, `max` | two arguments of one type; Go takes any number | partial |
 | `clear` |  | missing |
 | `complex`, `real`, `imag`, complex types | no complex type | missing |
@@ -49,7 +49,7 @@ The inventory is the 176 packages `go list std` reports for Go 1.26 (without `in
 | range over functions and iterators |  | missing |
 | `iota`, typed and untyped constants | yes | done |
 | `init` functions, package variables | package variables initialize in declaration order; `init` is not documented | partial |
-| packages and imports, `internal` | directories under `lib/`, imports by name, `./` for local packages; an `internal` rule is not documented | partial |
+| packages and imports, `internal` | directories under the library (`toolchain/std/`, `packages/`, `toolchain/runtime/`), imports by name, `./` for local packages; an `internal` rule is not documented | partial |
 | modules, `go.mod`, versioned dependencies | path imports from `vendor/`, `tin.mod`, `tin vendor`, `tin.lock` content hashes and per-package capabilities checked at compile time (PACKAGES.md); no version resolution by design, no fetching from URLs yet | partial |
 | build tags, `GOOS`/`GOARCH` files | files ending `_darwin`, `_linux`, `_linux_arm64`, `_linux_amd64` | partial |
 | `unsafe`, `cgo` | no `unsafe`; `extern` and raw memory only inside the standard library and vendored packages whose `tin.mod` declares `caps unsafe` | design |
@@ -133,7 +133,7 @@ Ordered by import path, as `go list std` prints them.
 | `expvar` |  | missing |  |  |
 | `flag` | 1+0 | partial | lever | Str, Int, Bool, F64, Parse, Usage; no FlagSet, no Duration, no custom Value |
 | `fmt` | 944+127 | partial | say | Line, Fmt, Str, Fault and string interpolation with format specs, by static type; no Sscanf, Fscan or Scan, and no Stringer or Formatter (formatting is derived) |
-| `go/ast` |  | n/a |  | Go's own compiler front end; Tin's compiler is selfhost/ |
+| `go/ast` |  | n/a |  | Go's own compiler front end; Tin's compiler is toolchain/compiler/ |
 | `go/build` |  | n/a |  |  |
 | `go/build/constraint` |  | n/a |  |  |
 | `go/constant` |  | n/a |  |  |
