@@ -534,8 +534,10 @@ let r = try wire.Get("http://127.0.0.1:8080/json")
 - `(c Conn) ReadFull(n i64) !str`: ReadFull reads exactly n bytes.
 - `(c mut Conn) Close()`: Close closes the connection.
 - `Listen(addr str) !Listener`: Listen opens a TCP listener on "host:port" (":0" picks a free port: see Port).
+- `ListenReuse(addr str) !Listener`: ListenReuse opens a TCP listener on "host:port" with SO_REUSEPORT set before bind (#1289): several listeners in one process, or several processes, can bind the same address and the kernel balances new connections over them, so a program can open one listener per core as anvil does. On macOS the kernel does not balance this way (see packages/anvil/anvil_darwin.tin). ":0" picks a free port: see Port.
 - `(l Listener) Port() i64`: Port is the port the listener is bound to.
 - `(c Conn) LocalPort() i64`: LocalPort is the port this end of the connection uses (what the peer sees as the source port).
+- `(c Conn) RemoteAddr() !str`: RemoteAddr is the address the connection comes from, "ip:port" ("[ip]:port" for IPv6, and an IPv4 peer of an IPv6 listener as "a.b.c.d:port"), read with getpeername: it fails when the peer cannot be read. It is the wire twin of anvil.Req.RemoteAddr (#355), for a server that has no Req (pg_hba.conf matching, an access log).
 - `(c Conn) CloseWrite()`: CloseWrite half-closes the connection: the peer reads the end of the stream after what was written, and this end still reads what the peer sends.
 - `(l Listener) Accept() !Conn`: Accept waits for the next connection.
 - `(l Listener) AcceptTimeout(timeout i64) !Conn`: AcceptTimeout waits at most timeout ns for the next connection (0: no limit), failing with a fault that says "timed out" when none came. A negative timeout is refused.
