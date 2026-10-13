@@ -1293,6 +1293,30 @@ Package flume reads and writes file descriptors through 64 KiB buffers: lines, w
 
 Package quarry is the operating system interface (like Go's os): arguments, environment, files and directories.
 
+- `const EWOULDBLOCK = EAGAIN`
+- `type File struct`: File is an open file descriptor with its path for faults (Go's os.File). A File is a reference: a copy names the same descriptor, and Close on one closes it for all.
+- `OpenFile(path str, flags i64, perm i64) !File`: OpenFile opens path with flags (the O* constants below) and permission bits perm (the low 12 bits of open's mode; used only with OCreate, and masked by the process umask).
+- `(f File) Fd() i64`: Fd is the raw descriptor, for calls that need it (setsockopt, an io_uring submission, sendfile).
+- `(f File) Name() str`: Name is the path the file was opened with, as faults report it.
+- `(f mut File) Close() !`: Close releases the descriptor. Closing twice is a fault (the OS would close another file's descriptor, so a closed File is marked and refused).
+- `(f File) ReadAt(p mut []u8, off i64) !i64`: ReadAt reads up to len(p) bytes of f at off into p without moving the file offset, and returns how many it read: fewer only at the end of the file (0 past it). Several lanes may call it on one File at once; nothing allocates.
+- `(f File) WriteAt(p []u8, off i64) !i64`: WriteAt writes all of p to f at off without moving the file offset, and returns len(p). A short write is continued, so the file holds every byte or the call fails.
+- `(f File) ReadAtV(bufs mut [][]u8, off i64) !i64`: ReadAtV reads into bufs in order starting at off (one preadv), without moving the file offset, and returns the total read: fewer only at the end of the file. Short results continue into the next buffers, so every byte that was there is read.
+- `(f File) WriteAtV(bufs []str, off i64) !i64`: WriteAtV writes bufs in order starting at off (pwritev), without moving the file offset, and returns the total written (always the bytes of every buffer, or a fault). Short results continue into the next buffers.
+- `(f File) Size() !i64`: Size is the file's size in bytes from fstat on this descriptor (st_size).
+- `(f File) Sync() !`: Sync waits until this file's data and metadata are on stable storage (fsync). On macOS that is F_FULLFSYNC, which also flushes the drive's cache (the same choice quarry.Sync makes).
+- `(f File) DataSync() !`: DataSync waits until this file's data (and the metadata a later read needs) is on stable storage (fdatasync), which is cheaper than Sync for a write-ahead log. macOS has no fdatasync: it does what Sync does, F_FULLFSYNC, which is stronger than POSIX fdatasync and never weaker.
+- `(f mut File) Truncate(n i64) !`: Truncate sets the file's size to n bytes (ftruncate): shorter drops the tail, longer fills with zeros. The file offset is not moved.
+- `(f File) Preallocate(off i64, n i64) !`: Preallocate makes room for n bytes at off without writing them, so a later write into the range cannot fail for lack of space (fallocate on Linux, fcntl F_PREALLOCATE on macOS). Neither changes the file's size. On a file system without it (EOPNOTSUPP on Linux) the file is extended with ftruncate instead, which reserves no blocks: the size is right, but the guarantee is not.
+- `(f File) ReadAhead(off i64, n i64) !`: ReadAhead asks the kernel to read the n bytes at off into the page cache in the background, so a later sequential read does not wait for the disk (readahead on Linux, F_RDADVISE on macOS). It returns at once; a file system that cannot (a pipe, an unusual mount) fails with its error.
+- `(f File) Advise(a Advice, off i64, n i64)`: Advise tells the kernel how the range at off of len n will be used (posix_fadvise): a scan (Advice.Sequential), a random lookup (Advice.Random), a range wanted soon (Advice.WillNeed) or one that can be dropped (Advice.DontNeed). On macOS, which has no posix_fadvise, it does nothing (use ReadAhead or SetNoCache); on a kernel without the call it also does nothing. Advice is a hint: it never fails.
+- `type Advice enum`: Advice is how a file range will be used, for Advise (POSIX_FADV_*).
+- `(f File) SyncRange(off i64, n i64, flags i64) !`: SyncRange writes the file range at off of len n back to disk if it is dirty (sync_file_range on Linux), a hint between fdatasync and nothing for a checkpoint that must bound dirty data. macOS has no sync_file_range: it fsyncs the whole file (which is stronger). flags selects what the call waits for (SYNC_FILE_RANGE_WAIT_BEFORE|WRITE|WAIT_AFTER, 1|2|4); 0 starts writeback without waiting.
+- `(f File) SetNoCache(on bool) !`: SetNoCache turns the page cache off (or on) for this descriptor: macOS F_NOCACHE, Linux O_DIRECT through fcntl. With the cache off every read and write goes to the device, and the buffer and offset must be aligned to the device's block size, so a caller that wants O_DIRECT usually opens the file with ODirect instead; SetNoCache is for a descriptor that already exists.
+- `(f File) Lock() !`: Lock takes an exclusive advisory lock on the whole file, waiting while another process holds it (flock). It is the postmaster.pid pattern: a second process that opens the same file and calls TryLock sees false and exits. The lock is held until Unlock or Close, and belongs to the open descriptor, so it is released when the process ends however it ends.
+- `(f File) TryLock() !bool`: TryLock takes the exclusive advisory lock without waiting and reports whether it got it; another process holding it is false, not a fault.
+- `(f File) Unlock() !`: Unlock releases the advisory lock this descriptor holds (flock LOCK_UN).
+- `SyncDir(path str) !`: SyncDir waits until the directory at path is on stable storage (open with ODirectory, fsync), which is the second half of a durable rename: rename the file, fsync the file, then SyncDir the directory that holds it. quarry.Rename is one renameat and already replaces atomically.
 - `type FileType enum`: FileType is what a path is.
 - `type FileInfo struct`: FileInfo is what stat and lstat report about a path. Times are unix nanoseconds.
 - `type DirEntry struct`: DirEntry is a name in a directory with its type.
@@ -1887,13 +1911,9 @@ Package cairn is a set of containers: heaps, deques, a queue, sets, a bitset and
 Package stamp computes non-cryptographic hashes and checksums: FNV-1a, CRC-32 (IEEE and Castagnoli, slicing-by-8), Adler-32, xxHash64, and Hash, a fast 64-bit hash for tables.
 
 - `Crc32(s str) u32`: Crc32 is the IEEE CRC-32 of s (as in zip, gzip and PNG).
-- `Crc32Bytes(b []u8) u32`: Crc32Bytes is the IEEE CRC-32 of b, read in place (no string is made).
 - `Crc32Update(crc u32, s str) u32`: Crc32Update continues an IEEE CRC-32 over more data.
 - `Crc32UpdateBytes(crc u32, b []u8) u32`: Crc32UpdateBytes continues an IEEE CRC-32 over the bytes of b, read in place (no string is made).
 - `Crc32C(s str) u32`: Crc32C is the Castagnoli CRC-32 of s (as in iSCSI, ext4 and many databases).
-- `Crc32CBytes(b []u8) u32`: Crc32CBytes is the Castagnoli CRC-32 of b, read in place (no string is made).
-- `Crc32CUpdate(crc u32, s str) u32`: Crc32CUpdate continues a Castagnoli CRC-32 over more data.
-- `Crc32CUpdateBytes(crc u32, b []u8) u32`: Crc32CUpdateBytes continues a Castagnoli CRC-32 over the bytes of b, read in place (no string is made).
 - `Fnv32a(s str) u32`: Fnv32a is the 32-bit FNV-1a hash of s.
 - `Fnv64a(s str) u64`: Fnv64a is the 64-bit FNV-1a hash of s.
 - `Adler32(s str) u32`: Adler32 is the Adler-32 checksum of s (as in zlib).
