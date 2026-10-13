@@ -246,7 +246,7 @@ Ordered by import path, as `go list std` prints them.
 
 ## What to build, in order
 
-The order comes from two things: what other work depends on, and what services import most. Foundations come first because the rest of the library is written in their terms. Each is decided in [design/design_foundations.md](design/design_foundations.md) (the need, the decision, what it replaces, what was rejected, what it unlocks), which also has the order of the steps and what each depends on.
+The order comes from two things: what other work depends on, and what services import most. Foundations come first because the rest of the library is written in their terms. Each is decided in [design/design_foundations.md](https://github.com/usetin/docs/blob/main/design/design_foundations.md) (the need, the decision, what it replaces, what was rejected, what it unlocks), which also has the order of the steps and what each depends on.
 
 **Foundations (decided; build in the order of that document):**
 
