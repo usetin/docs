@@ -223,7 +223,7 @@ names starting with `.` or `_` are left out of a walk and a glob, as Go's `embed
 refused (never followed), and so is any entry whose type readdir does not give. A pattern that matches
 nothing is an error (`no file matches PATTERN`), and so are a directive that is not directly above a
 top-level `let`, a `let` that already has a value, and more than 64 MiB of files. Every error is E004 at
-the directive's position (toolchain/docs/ERRORS.md).
+the directive's position (ERRORS.md).
 
 How the bytes land in the image: the lexer binds the directive to the `let` (`embed_bind` in
 `toolchain/compiler/lex.tin`), the parser reads the files (`embed_blob` in `toolchain/compiler/parse.tin`)
@@ -269,7 +269,7 @@ passes.
 | suite | where | how it checks |
 |---|---|---|
 | strict tests | `toolchain/tests/v2/*.tin` | `tools/dev/v2test.sh`: compiles and runs each and compares its output with `NAME.out` exactly, line order included (#626; a test whose order may vary has a `NAME.sorted` marker saying why, and only its lines are sorted first); `NAME_bad.tin` must fail to compile with exactly `NAME_bad.err` |
-| diagnostic codes | `toolchain/docs/ERRORS.md` | `tools/dev/v2test.sh` runs `tools/ci/diagnostics_check.tin`: the compiler's codes, the page and the `.err` files agree, and every example on the page compiles to exactly the output it shows |
+| diagnostic codes | `ERRORS.md` | `tools/dev/v2test.sh` runs `tools/ci/diagnostics_check.tin`: the compiler's codes, the page and the `.err` files agree, and every example on the page compiles to exactly the output it shows |
 | assembly checks | `toolchain/tests/v2/*_asm.tin` + `*_asm.check` | `tools/dev/v2test.sh`: compiles with `-S` and matches the listing against ordered `CHECK:`/`CHECK-NOT:` lines, lit-style; a `[arm64]`/`[amd64]` line selects a section, lines before any section apply to every CPU |
 | Linux | same files | `tools/dev/linuxtest.sh`: cross-compiles for linux-arm64, runs in `tin-debian-arm64`, compares with the same `.out` files |
 | HTTP conformance | `bench/http/conformance` | 26 edge cases against a running server: `bin/conformance -addr 127.0.0.1:9180 -pid PID` |
@@ -336,7 +336,7 @@ varies (cores or tasks finishing in any order) sorts: save `bin/t | LC_ALL=C sor
 
 Adding a compiler error: report it with `err_code(pos, "E5NN NAME")` (or `err_code_at`,
 `err_code_quoted`), reusing the code of the rule it enforces or adding one: a new entry in
-`toolchain/docs/ERRORS.md`, in code order, with the rule, an example, the exact output and the fix.
+`ERRORS.md`, in code order, with the rule, an example, the exact output and the fix.
 Never renumber or reuse a code; when a diagnostic goes away, its entry stays, marked `Retired:`.
 
 Writing to files in tests: use paths under `/tmp/tin-test-*` (they work on macOS and
@@ -561,23 +561,35 @@ TIN_REPLAY_KEY=<64 hex digits> tin replay spool/00001700000000000000-000-1.tcap 
 
 ## 9. Repository layout
 
+The language and its toolchain live in one repository, `usetin/tin`; the documentation, the design
+notes, the benchmark suites and the programs built with Tin have their own (usetin/docs,
+usetin/bench, usetin/tit, usetin/tinhub, usetin/tinland).
+
 ```text
-tin                 the tin command (shell script)
-Makefile            builds, bootstraps, tests
-toolchain/compiler/           the compiler (COMPILER.md)
-toolchain/runtime/            the runtime (RUNTIME.md)
-toolchain/std/<package>/      each standard-library package, one directory each (toolchain/std/README.md)
-packages/<package>/           servers, clients and protocols (anvil, wire, tls, redis, mysql, postgres, kafka, websocket, ...)
-toolchain/tests/v2/           strict tests and expected outputs
-toolchain/seed/               tinc-darwin-arm64, tinc-linux-arm64, tinc-linux-amd64: the compilers that start a build
-examples/           api.tin (HTTP server), tasks.tin, redis.tin, mysql.tin, websocket.tin, demo.tin, demo_go/
-bench/              v2/ CPU benchmarks, http/ HTTP benchmarks and tools, v04/ the service benchmark, ref/ Go references
-tools/              ci/ (the CI checks), dev/ (v2test.sh, dist.tin, debugging helpers, x64fuzz/), gen/ (gendoc.tin, gencoverage.tin, table generators)
-toolchain/docs/               this documentation
-products/           programs built with Tin (tinland/: editor tooling)
-design/             design decisions, interfaces, verification, roadmap
-bin/                build output (ignored)
+usetin/tin          the language and its toolchain
+  tin                 the tin command (shell script)
+  Makefile            builds, bootstraps, tests
+  toolchain/compiler/           the compiler (COMPILER.md)
+  toolchain/runtime/            the runtime (RUNTIME.md)
+  toolchain/std/<package>/      each standard-library package, one directory each (toolchain/std/README.md)
+  packages/<package>/           servers, clients and protocols (anvil, wire, tls, redis, mysql, postgres, kafka, websocket, ...)
+  toolchain/tests/v2/           strict tests and expected outputs
+  toolchain/seed/               tinc-darwin-arm64, tinc-linux-arm64, tinc-linux-amd64: the compilers that start a build
+  examples/           api.tin (HTTP server), tasks.tin, redis.tin, mysql.tin, websocket.tin, demo.tin, demo_go/
+  bench/ref/          the Go reference programs the checks compare against
+  tools/              ci/ (the CI checks), dev/ (v2test.sh, dist.tin, setup.sh, debugging helpers, x64fuzz/), gen/ (gendoc.tin, gencoverage.tin, table generators)
+  bin/                build output (ignored)
+
+usetin/docs         this documentation and design/
+usetin/bench        the benchmark suites (v2/ CPU, http/ HTTP, v04/ the service benchmark, tit/)
+usetin/tit          version control written in Tin
+usetin/tinhub       tit repository hosting, reviews and CI
+usetin/tinland      the macOS editor
 ```
+
+A workspace checkout keeps the repositories side by side and `tools/dev/setup.sh` (in usetin/tin)
+links `docs/` and `design/` into the toolchain checkout, so the commands here run from it as
+before. The documentation check reads the pages through that link.
 
 ## 10. Version control
 
@@ -596,12 +608,12 @@ where the bootstrap passed, together with the compiler change that needed them.
 
 ## 11. Regenerating the docs
 
-`sh tools/ci/tin.sh tools/gen/gendoc.tin` rewrites `toolchain/docs/STDLIB.md` from the comments in `toolchain/std/` and `packages/`
+`sh tools/ci/tin.sh tools/gen/gendoc.tin` rewrites `STDLIB.md` from the comments in `toolchain/std/` and `packages/`
 (package comment, then one line per exported function, type and constant). Write a
 one-line comment above every exported declaration.
 
 `bin/tinc -o /tmp/gencoverage tools/gen/gencoverage.tin && /tmp/gencoverage` rewrites
-`toolchain/docs/COVERAGE.md` from the maintained inventory in `design/coverage.md`.
+`COVERAGE.md` from the maintained inventory in `design/coverage.md`.
 
 `sh tools/ci/tin.sh tools/gen/gen_unicode.tin` rewrites `toolchain/std/glyph/tables.tin` and `toolchain/runtime/printable.tin` (the Unicode
 tables) from Go's `unicode/tables.go`; it needs a Go tree only to read that one file.

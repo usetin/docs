@@ -7,7 +7,7 @@ PR #214 (adopted).
 ## Ingot block header
 
 Every block of the per-core mmap heap (toolchain/runtime/memory.tin) keeps its 16-byte header,
-so payloads stay 16-byte aligned (toolchain/docs/RUNTIME.md):
+so payloads stay 16-byte aligned (RUNTIME.md):
 
 | word | at    | meaning                                                              |
 |------|-------|----------------------------------------------------------------------|

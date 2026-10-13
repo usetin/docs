@@ -781,14 +781,14 @@ fn main() {
 example.tin:6:11: error E104 PRIVATE: function isASCII is private to twine: only capitalized names are exported
 ```
 
-Fix: use the package's exported API (toolchain/docs/STDLIB.md); in your own package, capitalize the
+Fix: use the package's exported API (STDLIB.md); in your own package, capitalize the
 name to export it.
 
 ### E110 UNKNOWN_PACKAGE
 
 An import path names a package in `vendor/`, in the standard library, or next to the
 program's first file; a path starting with `./` names a package next to the importing file
-(toolchain/docs/PACKAGES.md).
+(PACKAGES.md).
 
 ```tin edition=1
 package main
@@ -810,7 +810,7 @@ importing file (`import "./geom"`).
 
 When the project directory has a `tin.lock`, every vendored source file (under `vendor/`) must
 be listed in it with its SHA-256 hash, and every other file the lock lists must still have the
-hash it records (toolchain/docs/PACKAGES.md). A changed or unexpected dependency does not build; the
+hash it records (PACKAGES.md). A changed or unexpected dependency does not build; the
 message names the file, the hash the lock records and the hash the file has.
 
 ```text file=tin.lock
@@ -835,7 +835,7 @@ record the new hashes (or regenerate the entry with `shasum -a 256 example.tin`)
 
 An import path whose first element contains a dot (`github.com/ana/geo`) names a package by
 where it comes from. It is read only from `vendor/<path>` in the program's directory: never
-from the standard library, and never from the network (toolchain/docs/PACKAGES.md).
+from the standard library, and never from the network (PACKAGES.md).
 
 ```tin edition=1
 package main
@@ -885,7 +885,7 @@ package or of another dependency.
 
 A vendored package's `tin.mod` is made of `module PATH`, `require PATH SOURCE` and
 `caps ...` lines (and `//` comments). Its capabilities are `net`, `files`, `spawn`, `exec`
-and `unsafe` (toolchain/docs/PACKAGES.md).
+and `unsafe` (PACKAGES.md).
 
 ```text file=vendor/example.com/peek/tin.mod
 module example.com/peek
@@ -4012,7 +4012,7 @@ the library (`toolchain/std/`, `packages/`, `toolchain/runtime/`).
 ### E804 CAPABILITY
 
 A vendored package may only call code that stays within the capabilities its `tin.mod`
-declares (`net`, `files`, `spawn`, `exec`, `unsafe`; toolchain/docs/PACKAGES.md). The standard
+declares (`net`, `files`, `spawn`, `exec`, `unsafe`; PACKAGES.md). The standard
 library's entry points to the operating system are tagged with the capability they need,
 and the check follows calls and function values through every package, so calling
 another package's function that dials needs `net` too. Every function of a vendored
@@ -4077,11 +4077,11 @@ fn main() {
 error E901 UNKNOWN_TARGET: unknown target windows-amd64 (darwin-arm64, linux-arm64, linux-amd64)
 ```
 
-Fix: use one of the listed targets (toolchain/docs/PORTING.md).
+Fix: use one of the listed targets (PORTING.md).
 
 ### E902 UNKNOWN_EDITION
 
-`-edition` takes `0` (the syntax of toolchain/docs/LANGUAGE.md) or `1` (Tin 1's syntax).
+`-edition` takes `0` (the syntax of LANGUAGE.md) or `1` (Tin 1's syntax).
 
 ```sh
 tinc -edition 2 example.tin

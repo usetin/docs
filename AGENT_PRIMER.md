@@ -2,10 +2,11 @@
 
 Tin is a self-hosted language that compiles to native code for Linux arm64 and
 Linux x86-64 (production and benchmarks) and macOS arm64 (development only; see
-toolchain/docs/PORTING.md, "Platform roles"). AI writes all Tin code: optimize for speed and
-robustness, not human ergonomics. Root: the repository checkout. Full reference:
-toolchain/docs/LANGUAGE.md (language), toolchain/docs/STDLIB.md (packages), toolchain/docs/TOOLING.md (commands),
-toolchain/docs/RUNTIME.md (memory, layouts, trusted code), toolchain/docs/ERRORS.md (every diagnostic and its fix).
+PORTING.md, "Platform roles"). AI writes all Tin code: optimize for speed and
+robustness, not human ergonomics. Root: the toolchain repository checkout
+(usetin/tin); this documentation and design/ are in usetin/docs. Full reference:
+LANGUAGE.md (language), STDLIB.md (packages), TOOLING.md (commands),
+RUNTIME.md (memory, layouts, trusted code), ERRORS.md (every diagnostic and its fix).
 
 ## Build and run
     tin FILE.tin                                   compile and run
@@ -186,7 +187,7 @@ process-wide value, not per core: the runtime's own state, set before cores star
 the code) and declarations of libc functions. A str is a pointer to [len word][bytes][NUL]: bytes at
 cast(i64, s)+8. A slice is a pointer to a header [len, cap, data, region]. C int returns: only low 32
 bits are defined -> i64(i32(x)). Variadic C functions need `...` in the declaration. OS constants and
-differences go in NAME_darwin.tin / NAME_linux.tin (see toolchain/docs/PORTING.md); never hard-code an errno or
+differences go in NAME_darwin.tin / NAME_linux.tin (see PORTING.md); never hard-code an errno or
 flag value in shared code. Runtime helpers you may call: rt_str_from_raw(p, n) str, rt_str_new(n) i64
 (len set, bytes at +8), rt_append_str(cast(i64, b), s), rt_slice_grow(h, need, esz), rt_alloc(n),
 rt_ingot_alloc(n), rt_core_id(), rt_errno(). Prefer plain Tin over raw tricks unless speed demands it.
@@ -204,7 +205,7 @@ gauge(math) dice(random) stamp(non-crypto hashes) squash(gzip, zlib, snappy, lz4
 ChaCha20-Poly1305, X25519, P-256, base64, hex, RSA-OAEP, constant-time compare) ore(bytes)
 flume(buffered I/O) herald(logging) crucible(testing) redis(Redis client) kafka(Kafka client) mysql(MySQL client)
 postgres(PostgreSQL client) websocket(WebSocket server via anvil, and client). Signatures:
-toolchain/docs/STDLIB.md.
+STDLIB.md.
 
 ## Tests in your own packages
 Go style: `NAME_test.tin` next to the code (same package), `fn TestX(t mut crucible.T)` with
@@ -228,7 +229,7 @@ Anything that touches the OS must also run on Linux (cross-compile and run in ti
 - The package's README: API list, design notes, known gaps.
 
 ## Parallel work with tit
-tit (`products/tit`, commands in toolchain/docs/TIT.md) gives each agent its own workspace on one store:
+tit (usetin/tit, commands in TIT.md) gives each agent its own workspace on one store:
 `tit workspace new <issue>` makes `../<repo>-<issue>` on its own branch from main, with its own HEAD, index and
 undo; `tit undo` there reverses only that workspace's operations and refuses, naming the other workspace, when
 another one moved the same branch since. Keep an issue's work as a stack of small changes: `tit absorb` sends fixes

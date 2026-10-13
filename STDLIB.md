@@ -115,7 +115,7 @@ Generated from the comments in `toolchain/std/*/` and `packages/*/` by `tools/ge
 
 ## say
 
-Built into the compiler (formatting by static type, no reflection): `say.Line(a, b...)`, `say.Text(...)`, `say.Out(format, ...)`, `say.Fmt(format, ...) str`, `say.Str(x) str`, `say.Fault(format, ...) fault`, `say.To(fd, ...)`, `say.LineTo(fd, ...)`. See toolchain/docs/LANGUAGE.md.
+Built into the compiler (formatting by static type, no reflection): `say.Line(a, b...)`, `say.Text(...)`, `say.Out(format, ...)`, `say.Fmt(format, ...) str`, `say.Str(x) str`, `say.Fault(format, ...) fault`, `say.To(fd, ...)`, `say.LineTo(fd, ...)`. See LANGUAGE.md.
 
 ## fault
 
@@ -340,7 +340,7 @@ The middleware writes one herald line per request, with the client's address as 
 
 q.ClientIP() is the connection's peer unless the peer is one of the TrustedProxies: behind a proxy of yours, call TrustedProxies first, or every line carries the proxy's address.
 
-ServeTLS (and Router.ServeTLS) serve HTTPS: TLS 1.3 with a PEM certificate chain and key, each handshake in a task of its own, then the same event loop with records decrypted before parsing and sealed before writing (toolchain/docs/RUNTIME.md). examples/https_server.tin.
+ServeTLS (and Router.ServeTLS) serve HTTPS: TLS 1.3 with a PEM certificate chain and key, each handshake in a task of its own, then the same event loop with records decrypted before parsing and sealed before writing (RUNTIME.md). examples/https_server.tin.
 
 - `TrustedProxies(cidrs []str) !`: TrustedProxies sets the proxies whose X-Forwarded-For and Forwarded headers ClientIP believes, as networks ("10.0.0.0/8", "fd00::/8") or single addresses. Call it before Serve. With none (the default) ClientIP is the connection's peer: the headers are written by the client and prove nothing unless a proxy you run replaced them.
 - `(q Req) RemoteAddr() str`: RemoteAddr is the address the request's connection comes from, "ip:port" ("[ip]:port" for IPv6, and an IPv4 client of an IPv6 listener as IPv4), or "" for a request made in the process. It is read once per connection. A request replayed from a capsule (#242) gets the address it was recorded with, "" when the capsule is older than that (schema 1).
@@ -1371,7 +1371,7 @@ Package macho reads bounded 64-bit little-endian Mach-O executables for arm64 an
 
 Package buildinfo reads the build metadata Tin's own Mach-O executables carry: the LC_UUID and LC_BUILD_VERSION load commands.
 
-Contract: the compiler does not write Go's buildinfo blob (the "\xff Go buildinf:" record that debug/buildinfo of Go reads), and ELF executables carry no build metadata today. A Tin Mach-O executable carries an LC_UUID, a hash of its code, so identical builds have the same UUID (toolchain/docs/COMPILER.md, section 9), and an LC_BUILD_VERSION naming macOS and the minimum and SDK versions the compiler targets. Nothing else is written, so this package reads only those two commands.
+Contract: the compiler does not write Go's buildinfo blob (the "\xff Go buildinf:" record that debug/buildinfo of Go reads), and ELF executables carry no build metadata today. A Tin Mach-O executable carries an LC_UUID, a hash of its code, so identical builds have the same UUID (COMPILER.md, section 9), and an LC_BUILD_VERSION naming macOS and the minimum and SDK versions the compiler targets. Nothing else is written, so this package reads only those two commands.
 
 - `type Info struct`: Info is the build metadata of one Mach-O executable.
 - `Read(path str) !Info`: Read returns the build metadata of a Mach-O executable: ErrNoBuildInfo for an ELF file or one without Tin's commands.
@@ -2551,7 +2551,7 @@ crucible.Done()
 - `Bench(label str, n i64, f fn(i64))`: Bench runs f(i) for i in [0, n) and prints the time per call.
 - `type T struct`: T is one running test: checks record failures in it, and the test continues.
 - `type B struct`: B is one running benchmark: run the measured code b.N times.
-- `Configure(pattern str, json bool)`: Configure sets how tin test runs the tests: pattern (a lasso regular expression, "" for every test) picks the tests and benchmarks whose names match, and json prints one JSON event per line instead of text (toolchain/docs/TOOLING.md section 5.2). A pattern that is not a regular expression ends the run with status 2.
+- `Configure(pattern str, json bool)`: Configure sets how tin test runs the tests: pattern (a lasso regular expression, "" for every test) picks the tests and benchmarks whose names match, and json prints one JSON event per line instead of text (TOOLING.md section 5.2). A pattern that is not a regular expression ends the run with status 2.
 - `(t mut T) Error(msg str)`: Error marks the test failed with msg (it keeps running).
 - `(t mut T) Log(msg str)`: Log records msg; it is printed only if the test fails.
 - `(t T) Failed() bool`: Failed reports whether the test has failed so far.
@@ -4219,7 +4219,7 @@ Package tar reads and writes bounded ustar archives with PAX and GNU long-name e
 
 Package textedit is the editing model behind Tinland: a text buffer with a cursor, a selection, undo and redo, search, and the syntax highlighting of Tin source. It does no I/O and draws nothing, so it runs (and is tested) on every platform; the editor program supplies the keys, the pixels and the files.
 
-- `const KindPlain = 0`: Syntax classes of Tin source, from the edition 1 lexical rules (toolchain/docs/LANGUAGE.md): the reserved words, // comments, "strings", `raw strings` (which may run over several lines), runes, numbers with their units.
+- `const KindPlain = 0`: Syntax classes of Tin source, from the edition 1 lexical rules (LANGUAGE.md): the reserved words, // comments, "strings", `raw strings` (which may run over several lines), runes, numbers with their units.
 - `const KindKeyword = 1`
 - `const KindString = 2`
 - `const KindNumber = 3`

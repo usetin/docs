@@ -12,7 +12,7 @@ limits, graceful shutdown in containers) and benchmark numbers are judged on Lin
 macOS arm64 is a development platform: the compiler, the tests and `tin run` must keep
 working there (it is a native CI gate), but it is not a deployment target, macOS-only
 behaviour is never a reason for a design decision, and macOS numbers are never quoted as
-results (toolchain/docs/PERFORMANCE.md, "Benchmark policy").
+results (PERFORMANCE.md, "Benchmark policy").
 
 Choose a target with `tin build --target T` or `tinc -target T`; the default is the
 machine the compiler runs on. One compiler binary contains every backend.

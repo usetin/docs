@@ -6,7 +6,11 @@ plan is `design/roadmap.md`; the design decisions are `design/design_foundations
 everything lives and what you may and may not change. If a task does not fit this layout, stop and say so
 instead of inventing a new place for it.
 
-## 1. The repository
+## 1. The repositories
+
+The language and its toolchain live in `usetin/tin` (the paths in this table without a repository
+name are its own); the documentation and design notes in `usetin/docs`, the benchmark suites in
+`usetin/bench`, and the programs written in Tin in `usetin/tit`, `usetin/tinhub` and `usetin/tinland`.
 
 | Path | What lives there | Who may change it |
 |---|---|---|
@@ -17,15 +21,15 @@ instead of inventing a new place for it.
 | `toolchain/tests/v2/` | The strict test suite: `NAME.tin` plus `NAME.out` (expected stdout, sorted bytewise because the suite sorts lines) or `NAME_bad.tin` plus `NAME_bad.err` (expected compile error). Run by `tools/dev/v2test.sh`. | Every task adds tests here. |
 | `toolchain/tests/regressions/` | One reproducer per fixed bug, with its contract in `cases.json`; every entry needs an `issue` number. Run by `tools/ci/regressions.tin`. | Every bug fix. |
 | `bench/ref/NAME/` | The Go twin of a Tin test: a Go program printing the same lines. The expected output of the Tin test is Go's. Go is a comparison baseline only, never part of the product. | Library tasks, alongside the Tin test. |
-| `bench/`, `bench/v04`, `bench/http`, `bench/router` | Benchmarks and service benchmarks against Go. | Performance tasks. |
-| `toolchain/docs/` | `LANGUAGE.md` (reference), `RUNTIME.md`, `COMPILER.md`, `TOOLING.md`, `PORTING.md`, `PERFORMANCE.md`, `COVERAGE.md` (the inventory of Go's surface against Tin), `STDLIB.md` (generated), `AGENT_PRIMER.md`. | Whoever changes behavior updates the matching doc in the same PR. |
-| `design/` | `roadmap.md` (the plan), `design_foundations.md` (decided designs), `stdlib_verified.md` (what is verified against Go), the interfaces between parts. | Roadmap boxes and verification rows as work lands. |
-| `tools/` | `dev/` (`v2test.sh`, `compare_compilers.sh`, `dist.tin`, debugging helpers), `gen/` (`gendoc.tin` writes `toolchain/docs/STDLIB.md`, `gen_unicode.tin` writes the Unicode tables), `ci/` (CI checks). | `tools/ci`: checks are Tin programs run by `sh tools/ci/tin.sh NAME`; never add a Python file. New tooling is written in Tin. |
+| `usetin/bench` | The benchmark suites: `v2/` (CPU), `http/`, `v04/` (the service benchmark), `files/`, `router/`, `tit/` — against Go. | Performance tasks. |
+| `usetin/docs` | `LANGUAGE.md` (reference), `RUNTIME.md`, `COMPILER.md`, `TOOLING.md`, `PORTING.md`, `PERFORMANCE.md`, `COVERAGE.md` (the inventory of Go's surface against Tin), `STDLIB.md` (generated), `AGENT_PRIMER.md`, `CI.md`, `ARCHITECTURE.md` (this page), `design/`. | Whoever changes behavior updates the matching doc in the same PR. |
+| `usetin/tit`, `usetin/tinhub`, `usetin/tinland` | Programs built with Tin that people use: `tit` (version control), `tinhub` (hosting for tit), `tinland` (the editor and its VS Code extension). Each has its own README and tests; they depend on `toolchain/`, `packages/` and each other through their checkouts (tinhub imports `tit` packages, design/tit.md §16). | The product's own tasks. |
+| `tools/` | `dev/` (`v2test.sh`, `compare_compilers.sh`, `dist.tin`, debugging helpers), `gen/` (`gendoc.tin` writes `STDLIB.md`, `gen_unicode.tin` writes the Unicode tables), `ci/` (CI checks). | `tools/ci`: checks are Tin programs run by `sh tools/ci/tin.sh NAME`; never add a Python file. New tooling is written in Tin. |
 | `products/` | Programs built with Tin that people use: `tinland/` (the IDE: `intellij/`, the IntelliJ Platform plugin, beside `vscode/`), `tit/` (version control), `tinhub/` (hosting for tit), `tinos/` later. Each product has its own README and tests and depends only on `toolchain/` and `packages/`, except that Tinland and tinhub import `products/tit` packages (design/tit.md §16). | The product's own tasks. |
 | `examples/`, `docker/`, `install.sh`, `Makefile`, `VERSION`, `.github/` | Examples, container images, installer, build entry points, CI and the PR template. | Only tasks about distribution or CI. |
 | `go.mod` | Left from the retired Go stage; Go remains only as a baseline for twins and the HTTP conformance tools until those are rewritten in Tin. | Do not add Go code to the product. |
 
-Generated files are never edited by hand: `toolchain/docs/STDLIB.md`, `toolchain/docs/COVERAGE.md` (from its generator), `toolchain/std/glyph/tables.tin`, `toolchain/runtime/printable.tin`, `bench/ref/*/main.go` and `toolchain/tests/v2/*.tin` where a generator wrote them. Change the generator and regenerate.
+Generated files are never edited by hand: `STDLIB.md` and `COVERAGE.md` (in usetin/docs), `toolchain/std/glyph/tables.tin`, `toolchain/runtime/printable.tin`, `bench/ref/*/main.go` and `toolchain/tests/v2/*.tin` where a generator wrote them. Change the generator and regenerate.
 
 ## 2. How a program is built
 
@@ -45,13 +49,13 @@ Process:
 7. A library function is verified against Go: a generated twin (`bench/ref/NAME/main.go`) and the Tin test (`toolchain/tests/v2/NAME.tin`) come from one description, and the Tin output must be identical to Go's. Prove the test is sensitive by breaking one constant and seeing it fail.
 8. Every bug found gets an issue, a regression case in `toolchain/tests/regressions/` tied to it, and a fix in the same PR (or its own PR). Fix bugs you find along the way.
 9. A PR is big enough to be complete: the code, the tests, the twin, the docs and the roadmap boxes it closes. No two-line PRs, no half features.
-10. Behavior changes update `toolchain/docs/LANGUAGE.md` or the matching doc, regenerate `toolchain/docs/STDLIB.md` (`sh tools/ci/tin.sh tools/gen/gendoc.tin`) and `toolchain/docs/COVERAGE.md`, and add the row to `design/stdlib_verified.md`.
+10. Behavior changes update `LANGUAGE.md` or the matching doc, regenerate `STDLIB.md` (`sh tools/ci/tin.sh tools/gen/gendoc.tin`) and `COVERAGE.md`, and add the row to `design/stdlib_verified.md`.
 11. Names follow the role of the thing, not a language prefix. A package directory is `toolchain/std/<name>/` or `packages/<name>/`; Tin's package names are short nouns (`twine` for strings, `link` for net/url).
 12. Do not add Python files (the only ones are the two lldb plugins in `tools/dev`, which lldb loads). Do not add dependencies. Do not weaken or delete a test to make it pass.
 
 ## 4. What to run before opening a PR
 
-```
+```sh
 make bootstrap                       # the compiler rebuilds itself to an identical binary (compiler or runtime changes)
 tools/dev/v2test.sh                      # the strict suite: every line must PASS
 sh tools/ci/tin.sh regressions       # regression cases
@@ -66,13 +70,13 @@ Run long commands (benchmarks, watches) in the background. The PR description us
 
 | Kind of work | Place | Also |
 |---|---|---|
-| A Go package or function | `toolchain/std/<tin name>/` or `packages/<tin name>/` (see `toolchain/docs/COVERAGE.md` for the Tin name, or pick a short noun and record it there) | `toolchain/tests/v2/<name>.tin` + `.out`, `bench/ref/<name>/main.go`, `toolchain/docs/COVERAGE.md` row, `design/stdlib_verified.md` row |
-| A language feature | `toolchain/compiler/` (lex, parse, check, lower, back ends) following the nine-step template in roadmap section 12.1 | `toolchain/tests/v2/<feature>.tin`, `_bad.tin` + `.err` cases, `toolchain/docs/LANGUAGE.md`, design note first |
-| A runtime feature | `toolchain/runtime/` with platform parts | `toolchain/docs/RUNTIME.md`, a runtime test, Linux behavior covered |
-| A compiler optimization | `toolchain/compiler/inline.tin`, `opt.tin`, `gen*.tin` | a benchmark before and after in `toolchain/docs/PERFORMANCE.md`, `make bootstrap` |
-| A new tool or command | written in Tin, under `tools/` (not `tools/ci`) | `toolchain/docs/TOOLING.md` |
+| A Go package or function | `toolchain/std/<tin name>/` or `packages/<tin name>/` (see `COVERAGE.md` for the Tin name, or pick a short noun and record it there) | `toolchain/tests/v2/<name>.tin` + `.out`, `bench/ref/<name>/main.go`, `COVERAGE.md` row, `design/stdlib_verified.md` row |
+| A language feature | `toolchain/compiler/` (lex, parse, check, lower, back ends) following the nine-step template in roadmap section 12.1 | `toolchain/tests/v2/<feature>.tin`, `_bad.tin` + `.err` cases, `LANGUAGE.md`, design note first |
+| A runtime feature | `toolchain/runtime/` with platform parts | `RUNTIME.md`, a runtime test, Linux behavior covered |
+| A compiler optimization | `toolchain/compiler/inline.tin`, `opt.tin`, `gen*.tin` | a benchmark before and after in `PERFORMANCE.md`, `make bootstrap` |
+| A new tool or command | written in Tin, under `tools/` (not `tools/ci`) | `TOOLING.md` |
 | A bug | the code that is wrong | `toolchain/tests/regressions/<name>.tin` + `cases.json` entry with the issue number |
-| A decision | `design/design_*.md` first, then code | a roadmap box moves from "Open questions" |
+| A decision | `design/design_*.md` (usetin/docs) first, then code | a roadmap box moves from "Open questions" |
 
 ## 6. Limits for fast or parallel agents
 

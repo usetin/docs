@@ -14,7 +14,7 @@ limbo, `design/interface_mem.md` in #260).
 ## 1. What an arena's memory is
 
 An arena is a **fresh request pool**: the same bump chunks, extra chunks and big blocks as
-the pool of a request (toolchain/docs/RUNTIME.md §3), made when the block is entered and freed when it
+the pool of a request (RUNTIME.md §3), made when the block is entered and freed when it
 is left. It is pool memory, never ingot memory, so:
 
 - pool memory is never counted (#176), so nothing in #176's interface changes.

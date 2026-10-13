@@ -290,7 +290,7 @@ replaces.
 4. **#633** on the frame areas of phase A.
 
 Each step: both back ends, the strict suite, the `make bootstrap` fixed point, Linux numbers from
-bench-linux for the performance claims (toolchain/docs/PERFORMANCE.md), and LANGUAGE.md §3 and §9,
+bench-linux for the performance claims (PERFORMANCE.md), and LANGUAGE.md §3 and §9,
 AGENT_PRIMER.md and RUNTIME.md §1 updated with the representation.
 
 ## 4. Open questions for review

@@ -16,8 +16,8 @@ rejects whole classes of bugs instead of leaving them to tests:
 This document describes **edition 1**, the syntax every Tin program uses: `fn`, `let` and
 `mut`, `match`, `for x in xs`, keyed struct literals, unit literals, and blocks for
 deadlines, budgets and tasks (`within`, `limit`, `guard`, `scope`, `select`). It is written
-from [design/design_syntax.md](../../design/design_syntax.md); the semantics are in
-[design/design_semantics.md](../../design/design_semantics.md). The Go-like syntax before it,
+from [design/design_syntax.md](design/design_syntax.md); the semantics are in
+[design/design_semantics.md](design/design_semantics.md). The Go-like syntax before it,
 edition 0, is history (`design/design_syntax.md` replaces it); section 22 maps each
 old form to its replacement.
 
@@ -95,7 +95,7 @@ fn main() {
   (`"github.com/ana/geo"`) is read only from `vendor/<path>` in the program's directory,
   never from the standard library or the network. `tin vendor` copies the packages
   `tin.mod` requires there, and `tin.lock` records each vendored file's SHA-256; a file
-  whose hash differs is a compile error (toolchain/docs/PACKAGES.md). Two import paths cannot load
+  whose hash differs is a compile error (PACKAGES.md). Two import paths cannot load
   different packages with the same name.
 - **Capabilities:** a vendored package's `tin.mod` declares what it may do (`caps net files
   spawn exec unsafe`). A call from it that can reach, through any package, a standard library
@@ -657,7 +657,7 @@ uses a two-word object/table pair; the checker verifies conversions, and method 
 dispatch through the table without allocating. `?dyn S`, `[]dyn S`, maps of `dyn S` and
 `?dyn S` values (#567), `!dyn S` results (#568), formatting (#569), `keep` of a dynamic
 value or container, and region checks are implemented; see
-[the representation and staging note](../../design/design_dyn.md). The
+[the representation and staging note](design/design_dyn.md). The
 `io` shapes live in `toolchain/std/io`. `constraints.Any`, `constraints.Comparable` and
 `sift.Ordered` are ordinary library shapes, not language keywords; import their packages
 where used.
@@ -2297,7 +2297,7 @@ type User struct {
 ## 20. Standard-library-only features
 
 Files under the library (`toolchain/std/`, `packages/`, `toolchain/runtime/`) are trusted and may use operations user code cannot. So may a vendored
-package whose `tin.mod` declares `caps unsafe` (toolchain/docs/PACKAGES.md); the packages that call it
+package whose `tin.mod` declares `caps unsafe` (PACKAGES.md); the packages that call it
 then need `unsafe` too.
 
 - `cast(T, x)` between `i64` and reference types (a str is a pointer to

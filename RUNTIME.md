@@ -528,7 +528,7 @@ another task. Resource cleanup callbacks run before the owning pool is reset.
 - `wire` sockets are non-blocking: connect, read, write and accept wait with
   `rt_task_wait` on `EAGAIN`. `Conn.SetTimeout` bounds each wait; past it the call fails
   with `wire: read timed out` (or connect/write), past the deadline with `deadline exceeded`.
-- Linux DNS uses nonblocking UDP/TCP sockets and task waits (toolchain/docs/STDLIB.md, wire contract).
+- Linux DNS uses nonblocking UDP/TCP sockets and task waits (STDLIB.md, wire contract).
 - Work with no non-blocking form (macOS DNS `getaddrinfo`, `quarry` file reads and writes that
   do not go through io_uring (below), anvil's `SendFile`) goes to shared helper threads: as many
   as there are cores, at least 4 (`TIN_HELPERS` sets the

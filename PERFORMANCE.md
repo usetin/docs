@@ -3,7 +3,7 @@
 ## Benchmark policy
 
 Tin is deployed on Linux, so its performance is judged on Linux. macOS arm64 is a
-development platform (toolchain/docs/PORTING.md, "Platform roles").
+development platform (PORTING.md, "Platform roles").
 
 - **Reference numbers are Linux.** A number quoted as a result (README, this file, a PR
   claiming a speed-up or "no regression", a release note) comes from Linux on bare metal
@@ -16,7 +16,7 @@ development platform (toolchain/docs/PORTING.md, "Platform roles").
 - **Comparisons run on the same machine in the same job**, interleaved (Tin and Go, before
   and after), and are reported as medians with the ratio. On shared machines (GitHub-hosted
   runners) only the ratios are meaningful; absolute numbers vary between runs.
-- **Continuous tracking:** `.github/workflows/bench-linux.yml` runs the CPU suite
+- **Continuous tracking:** the `bench-linux` workflow (usetin/bench) runs the CPU suite
   (`bench/v2`, Tin vs Go) and the HTTP suite (`bench/http/run_wrk.sh`, anvil vs fasthttp vs
   net/http) on `ubuntu-24.04` (x86-64) and `ubuntu-24.04-arm` every week and on demand (it
   does not run on pull requests), and writes the tables to the job summary. The same
@@ -41,7 +41,7 @@ development platform (toolchain/docs/PORTING.md, "Platform roles").
 ## Comparing revisions
 
 For libc-removal work (the libc removal), use both native Linux
-jobs in `bench-linux.yml`. Each job retains Tin-versus-Go measurements and adds a
+jobs in the `bench-linux` workflow (usetin/bench). Each job retains Tin-versus-Go measurements and adds a
 base-versus-head comparison with identical benchmark source. Each compiler loads its
 own revision's the library (`toolchain/std/`, `packages/`, `toolchain/runtime/`) through an explicit `TIN_ROOT`; copying two compiler binaries
 into one source tree is not an allocator/runtime comparison.
@@ -81,7 +81,7 @@ with both compilers and their matching library trees. The shell entrypoint
 
 `GET /users/{id}` through Redis over MySQL, Tin (`bench/v04/users.tin`) against Go + chi,
 go-redis and go-sql-driver/mysql (`bench/v04/go`), under wrk2 (`bench/v04/run.tin`, workflow
-`.github/workflows/bench.yml`). Three scenarios over random ids 1..10000: **cached** (every
+the `bench` workflow (usetin/bench)). Three scenarios over random ids 1..10000: **cached** (every
 read hits Redis), **db** (`/db/users/{id}`, a MySQL prepared statement per request) and
 **mixed** (cached reads with 0.5% `/slow` requests that answer after 50 ms). Each runs at an
 open-ended rate (maximum throughput, and requests per CPU-second of server time) and at a
@@ -95,7 +95,7 @@ Redis 7.2.16, MySQL 8.0.46 (service containers), wrk2 giltene/wrk2@44a94c1, Tin 
 wrk2 (2 threads, 128 connections), Redis and MySQL share CPUs 2–3. Each run is 20 s after a
 3 s warm-up; rounds alternate the servers, and Redis is emptied before every run so each run
 warms its own cache. The table is the median of 5 rounds,
-[workflow run 37210593145](https://github.com/yasserreslan/tin/actions/runs/37210593145).
+[workflow run 37210593145](https://github.com/usetin/tin/actions/runs/37210593145).
 
 This is a shared runner, so **the ratios are the result**; absolute numbers vary between
 runs. Tin/Go ratios of the medians (throughput above 1 and latency below 1 favour Tin):
@@ -107,7 +107,7 @@ runs. Tin/Go ratios of the medians (throughput above 1 and latency below 1 favou
 | mixed | **3.56** | **3.56** | 0.79 | 0.99 | 0.99 |
 
 An earlier run of the same workflow (run
-[37209296644](https://github.com/yasserreslan/tin/actions/runs/37209296644), 3 rounds,
+[37209296644](https://github.com/usetin/tin/actions/runs/37209296644), 3 rounds,
 before Redis was emptied per run) gave 3.93 / 1.19 / 3.75 for max req/s and 3.74 / 1.72 /
 3.62 for req per CPU-s: the throughput ratios hold within a few percent between runs.
 
@@ -393,7 +393,7 @@ runners; the ratios are the comparison.
 **Machines:** GitHub-hosted shared `ubuntu-24.04-arm`, Neoverse-N2, Linux 6.17.0-1022-azure,
 Go 1.27.2 linux/arm64; and GitHub-hosted shared `ubuntu-24.04`, AMD EPYC 7763, Linux
 6.17.0-1022-azure, Go 1.27.2 linux/amd64. Both sweep steps and artifact uploads succeeded
-in [workflow run 38091592358](https://github.com/yasserreslan/tin/actions/runs/38091592358);
+in [workflow run 38091592358](https://github.com/usetin/tin/actions/runs/38091592358);
 the remaining workflow benchmarks were cancelled after the threshold measurements.
 
 | architecture | thresholds | bootstrap median | change vs current |
@@ -504,7 +504,7 @@ These numbers describe this microbenchmark and machine; they are not a whole-pro
 comparison used seven alternating runs per side and reported medians on GitHub-hosted
 `ubuntu-24.04` amd64 and `ubuntu-24.04-arm` runners (Go 1.26.8; load and server work stayed
 on each runner). The comparison was from base `e3dbf8c` to head `d27e0b5`, which includes
-the conditional-increment change. The [workflow run](https://github.com/yasserreslan/tin/actions/runs/37161195781)
+the conditional-increment change. The [workflow run](https://github.com/usetin/tin/actions/runs/37161195781)
 contains the machine details and raw samples.
 
 | architecture | base ms | head ms | head/base | head Tin ms | Go ms | Go/Tin |
@@ -523,7 +523,7 @@ runtime path. The native Linux comparison used seven alternating CPU runs per si
 alternating HTTP rounds on GitHub-hosted amd64 and arm64 runners (Go 1.26.8; the load generator
 ran on the same machine). It compared base `7412ef6` (the then-current main plus conditional
 increment work) with head `d88cef5` (the same code plus the append optimization). See [workflow
-run 37163339932](https://github.com/yasserreslan/tin/actions/runs/37163339932) for raw samples,
+run 37163339932](https://github.com/usetin/tin/actions/runs/37163339932) for raw samples,
 HTTP logs and machine details.
 
 | architecture | `strbuild` base ms | head ms | head/base time |
@@ -551,11 +551,11 @@ loops retain the previous allocation strategy.
 The native Linux comparison used seven alternating CPU runs per side and five alternating
 HTTP rounds on GitHub-hosted shared runners: four vCPUs, AMD EPYC 7763 on amd64 and
 Neoverse-N2 on arm64, Go 1.26.8, with the load generator on the same runner. Run
-[37168100638](https://github.com/yasserreslan/tin/actions/runs/37168100638) produced an
+[37168100638](https://github.com/usetin/tin/actions/runs/37168100638) produced an
 arm64 JSON CPU outlier; the rerun
-[37169504458](https://github.com/yasserreslan/tin/actions/runs/37169504458) did not reproduce
+[37169504458](https://github.com/usetin/tin/actions/runs/37169504458) did not reproduce
 it. A later run
-[37170940420](https://github.com/yasserreslan/tin/actions/runs/37170940420) measured a
+[37170940420](https://github.com/usetin/tin/actions/runs/37170940420) measured a
 separate Intel amd64 attempt. Raw samples, machine details and HTTP logs are attached to
 these runs.
 
@@ -592,13 +592,13 @@ their cost there is zero. `--nopolls` turns them off, `--polls` puts them everyw
 `toolchain/runtime/`, and a function opts out with `@nopoll`. The cost below is for polls in every
 loop (the `--polls` form): a tight loop in a handler pays it; anvil and the rest of the library (`toolchain/std/`, `packages/`, `toolchain/runtime/`) do not.
 
-The default form was measured in [run 37340338604](https://github.com/yasserreslan/tin/actions/runs/37340338604)
+The default form was measured in [run 37340338604](https://github.com/usetin/tin/actions/runs/37340338604)
 (#341, head against main on the same runners, Linux 6.17.0-1022-azure, AMD EPYC and
 Neoverse-N2). HTTP head/base throughput of the anvil server programs, which now poll in
 their own code, was 1.012 (`/json`) and 1.003 (`/plaintext`) on amd64 and 0.994 and 0.996 on
 arm64; the CPU benchmarks, which start no cores, stayed between 0.982 and 1.018.
 
-The initial [native Linux run](https://github.com/yasserreslan/tin/actions/runs/37197260096)
+The initial [native Linux run](https://github.com/usetin/tin/actions/runs/37197260096)
 compared base `b6333ef` with head `9759a6b`, with polls enabled in strict Tin code.
 Both runners had four vCPUs, Linux 6.17.0-1022-azure and Go 1.26.8: Neoverse-N2
 on arm64 and AMD EPYC 9V74 on amd64.
@@ -631,7 +631,7 @@ flag test and a branch to a cold stub. The compiler drops the checks it can prov
 (loop counters, and after inlining, constants, lengths, narrow types and locals defined once),
 and the crypto kernels are `@wrap`.
 
-[Run 37350166526](https://github.com/yasserreslan/tin/actions/runs/37350166526) measured head
+[Run 37350166526](https://github.com/usetin/tin/actions/runs/37350166526) measured head
 `1d07ed3` against main `c0145f2` on the same runners: Linux 6.17.0-1022-azure, AMD EPYC 9V45 on
 amd64, Neoverse-V3 on arm64, Go 1.26.8. CPU figures are medians of seven alternating runs per
 side; HTTP uses one server core and wrk `-t2 -c100` on the same runner. Only ratios on these
@@ -658,23 +658,23 @@ itself, so the check is free there. A program that has measured such a loop can 
 in it.
 
 Before the elision pass and `@wrap` on the crypto kernels, the same comparison
-([run 37344878578](https://github.com/yasserreslan/tin/actions/runs/37344878578), main
+([run 37344878578](https://github.com/usetin/tin/actions/runs/37344878578), main
 `8b4e916`) cost 1.58 on arm64 x25519, 1.52 on tls13keys and 1.22 on p256ecdh. Those three are
 now 1.000, 1.002 and 1.006. Two probes with the checks off measure noise. All changes with the
-checks off ([run 37344888270](https://github.com/yasserreslan/tin/actions/runs/37344888270)) was
+checks off ([run 37344888270](https://github.com/usetin/tin/actions/runs/37344888270)) was
 within 3% on arm64. The same with 12 bytes of padding after `main`
-([run 37350044953](https://github.com/yasserreslan/tin/actions/runs/37350044953)) moved
+([run 37350044953](https://github.com/usetin/tin/actions/runs/37350044953)) moved
 memory_16 by 1.197 on arm64 and aesgcm by 1.113 on amd64. A ratio of a few percent on one
 benchmark can be code placement.
 
 ## HTTPS: anvil.ServeTLS against Go's crypto/tls (Linux)
 
-`bench/http/run_https.tin` (a step of `.github/workflows/bench-linux.yml`) serves the same routes
+`bench/http/run_https.tin` (a step of the `bench-linux` workflow (usetin/bench)) serves the same routes
 with `anvil.ServeTLS` (`bench/http/https.tin`) and with Go's net/http on crypto/tls
 (`bench/http/gotls`). Each server gets one core (TIN_CORES=1, GOMAXPROCS=1); wrk `-t2` runs on
 the same runner over TLS 1.3. The figures are medians of five alternating 5-second rounds. Full
 handshakes send `Connection: close` on every request, and neither server issues session tickets.
-[Run 37377650528](https://github.com/yasserreslan/tin/actions/runs/37377650528) used head
+[Run 37377650528](https://github.com/usetin/tin/actions/runs/37377650528) used head
 `5efe54a` (#466) on Linux 6.17.0-1022-azure (AMD EPYC 9V74 on amd64, Neoverse-N2 on arm64),
 Go 1.26.8. Only ratios on these shared runners are meaningful.
 
@@ -700,7 +700,7 @@ Their cost was seal's P-256 and RSA arithmetic (32-bit limbs, no fixed-base tabl
 - RSA keeps its blinding pair, which removes two exponentiations per signature;
 - X25519 uses 51-bit limbs.
 
-[Run 37388993368](https://github.com/yasserreslan/tin/actions/runs/37388993368) measured them on
+[Run 37388993368](https://github.com/usetin/tin/actions/runs/37388993368) measured them on
 Linux 6.17.0-1022-azure (AMD EPYC 7763 on amd64, Neoverse-N2 on arm64), with the same harness as
 above. These servers issue no session tickets, so every handshake is full.
 
@@ -745,7 +745,7 @@ function, selected at run time (`TIN_SEAL_SOFT=1` keeps the portable code, and t
   (`tools/gen/fe25519_asm.tin` writes both architectures from one product table, and checks it on
   an integer model).
 
-[bench-linux run 37646094544](https://github.com/yasserreslan/tin/actions/runs/37646094544) on
+[bench-linux run 37646094544](https://github.com/usetin/tin/actions/runs/37646094544) on
 Linux 6.17.0-1022-azure (Intel Xeon Platinum 8573C on amd64, Neoverse-N2 on arm64, Go 1.26.8),
 head 6a42e61 against main d88d62e. Only the ratios mean anything on shared runners.
 
@@ -779,7 +779,7 @@ Go server keeps its tickets on. wrk resumes sessions once a server issues ticket
 `bench/http/tlsload` (Go) now measures both kinds. Each full handshake starts with a fresh client.
 Each resumed one offers the ticket of the previous connection and still runs X25519 (psk_dhe_ke),
 but it sends no certificate and makes no signature.
-[Run 37399178539](https://github.com/yasserreslan/tin/actions/runs/37399178539) used head `ea8b04b`,
+[Run 37399178539](https://github.com/usetin/tin/actions/runs/37399178539) used head `ea8b04b`,
 before the arithmetic work above was merged, on Linux 6.17.0-1022-azure (AMD EPYC 7763 on amd64,
 Neoverse-N2 on arm64), Go 1.26.8:
 
@@ -816,7 +816,7 @@ change) recorded 490 MB for the 60000 values and 30018 mappings after deleting h
 and 1141 ms for 200000 keeps and overwrites of one 5 KB value. The 5000-byte values take 5120
 bytes of a slab each instead of a page-rounded 8192, and the memory of deleted values is
 reused instead of unmapped. These are not same-machine before and after figures: run
-`.github/workflows/bench-linux.yml` for those.
+the `bench-linux` workflow (usetin/bench) for those.
 
 ## File reads through io_uring (Linux)
 
@@ -824,7 +824,7 @@ reused instead of unmapped. These are not same-machine before and after figures:
 the helper threads are the fallback (`TIN_IO_URING=0`, kernels or seccomp profiles that refuse
 io_uring, FIFOs and network mounts). `bench/files` reads 10000 files of 4 KiB, 1000 per request
 over 4 connections per core, in 5 alternating rounds of 3 s per side; the table gives medians.
-[Run 37350232975](https://github.com/yasserreslan/tin/actions/runs/37350232975), GitHub's
+[Run 37350232975](https://github.com/usetin/tin/actions/runs/37350232975), GitHub's
 4-vCPU runners (Linux 6.17.0-1022-azure, AMD EPYC 9V74 and Neoverse-N2); only ratios mean anything there.
 
 | cores | amd64 helper files/s | amd64 io_uring files/s | io_uring/helper | arm64 helper files/s | arm64 io_uring files/s | io_uring/helper |
@@ -864,8 +864,8 @@ layout has not been measured on Linux, so no claim is made about it.
 
 ## HTTP/2 against Go's net/http (Linux)
 
-anvil serves h2c (#360). [Run 37347324727](https://github.com/yasserreslan/tin/actions/runs/37347324727)
-(`.github/workflows/bench-linux.yml`, head `tin2/360-http2` against main `c0145f2`, GitHub-hosted
+anvil serves h2c (#360). [Run 37347324727](https://github.com/usetin/tin/actions/runs/37347324727)
+(the `bench-linux` workflow (usetin/bench), head `tin2/360-http2` against main `c0145f2`, GitHub-hosted
 runners with four vCPUs, Linux 6.17.0-1022-azure, Go 1.26.8, h2load nghttp2 1.59.0: AMD EPYC
 9V45 on amd64, Neoverse-N2 on arm64). One server core each (`TIN_CORES=1`, `GOMAXPROCS=1`),
 `h2load -t2 -c32 -m10` (h2c by prior knowledge) on the same runner, 10 s after a 2 s warm-up,
@@ -890,7 +890,7 @@ The same run compared the HTTP/1.1 path with main (wrk, as above): head/base 0.9
 
 ## tit against git (Linux)
 
-`bench/tit/run.sh`, run by `.github/workflows/bench-linux.yml` (#807). The bench clones the Tin repository and adopts it into tit. It then runs each command 7 times, alternating tit and git, and reports medians that include starting the process. The run measured tit as of branch `tin2/tit-wave5` (#975) on 2026-10-09: GitHub-hosted shared runners with 4 CPUs, Linux 6.17.0-1022-azure, and git 2.55.0. The repository had 572 commits and 3005 files. On shared runners only the ratios are meaningful.
+`bench/run.sh` in usetin/tit, run by that repository's bench job (#807). The bench clones the Tin repository and adopts it into tit. It then runs each command 7 times, alternating tit and git, and reports medians that include starting the process. The run measured tit as of branch `tin2/tit-wave5` (#975) on 2026-10-09: GitHub-hosted shared runners with 4 CPUs, Linux 6.17.0-1022-azure, and git 2.55.0. The repository had 572 commits and 3005 files. On shared runners only the ratios are meaningful.
 
 | operation | arm64 (Neoverse-N2): git / tit ms | tit/git | amd64 (EPYC 9V74): git / tit ms | tit/git |
 |---|---|---|---|---|

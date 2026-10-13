@@ -1,7 +1,7 @@
 # tit: the command reference
 
-tit is version control written in Tin (`products/tit`; [the README](../../products/tit/README.md) is the tour,
-[design/tit.md](../../design/tit.md) the formats). This page lists every command and flag.
+tit is version control written in Tin ([usetin/tit](https://github.com/usetin/tit); its README is the tour,
+[design/tit.md](design/tit.md) the formats). This page lists every command and flag.
 
 <!-- The switch rows are plain text, not code spans: the docs check reads a code span that says switch as edition 0
 Tin. -->

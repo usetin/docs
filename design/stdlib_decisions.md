@@ -2,7 +2,7 @@
 
 Status: decision record, 2026-10-09. For each Go package the milestone "Stdlib breadth 2" does not port, this
 names Tin's counterpart or records why none is needed. `design/coverage.md` (published as
-`toolchain/docs/COVERAGE.md`) links here for every package it marks `n/a` or `design`. No code is changed by
+`COVERAGE.md`) links here for every package it marks `n/a` or `design`. No code is changed by
 this record. Each package is checked against the tree at `origin/main`.
 
 ## How to read the tables

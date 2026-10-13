@@ -4,7 +4,7 @@ Status: **done**, 2026-10-06; the "Typed compiler" milestone is closed. The unty
 removed in #381 with the seeds refreshed in #383; records became structs in #420 (#384); vectors and
 buffers became slices and `[]u8` in #452 (#385); strings became `str` in #504 (#386). `ck_legacy` and
 `F_LEGACY` no longer exist. Sections 1 to 5 are the plan as written on 2026-10-05 and are kept as
-history; section 6 records what each step did. toolchain/docs/COMPILER.md describes the compiler as it
+history; section 6 records what each step did. COMPILER.md describes the compiler as it
 is now. Owner: #228. The note decides nothing about the language: it is how the compiler's own source
 moved from the untyped internal dialect to typed edition 1.
 

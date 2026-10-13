@@ -1,7 +1,7 @@
 # Go coverage: what Tin has, and what it still needs
 
 Generated from `design/coverage.md` by `tools/gen/gencoverage.tin`; edit the source and
-regenerate `toolchain/docs/COVERAGE.md` to publish inventory changes.
+regenerate `COVERAGE.md` to publish inventory changes.
 
 The goal is a language in which everything Go's built-ins and standard library let a program do can be done, written in Tin. That is a goal about capabilities, not about copying Go: where Go's shape needs something Tin has chosen not to have (interfaces, reflection, shared mutable state), the entry says what takes its place. This page is the checklist. Update it in the same change that adds or removes a capability.
 
@@ -24,7 +24,7 @@ Every package this page marks `n/a` or `design`, or leaves out on purpose, is de
 
 | Go | Tin | status |
 |---|---|---|
-| `append`, `cap`, `copy`, `delete`, `len`, `make`, `new`, `panic`, `print`, `println` | the same (toolchain/docs/LANGUAGE.md section 13); `make` covers slices and maps | done |
+| `append`, `cap`, `copy`, `delete`, `len`, `make`, `new`, `panic`, `print`, `println` | the same (LANGUAGE.md section 13); `make` covers slices and maps | done |
 | `min`, `max` | two arguments of one type; Go takes any number | partial |
 | `clear` |  | missing |
 | `complex`, `real`, `imag`, complex types | no complex type | missing |
@@ -246,7 +246,7 @@ Ordered by import path, as `go list std` prints them.
 
 ## What to build, in order
 
-The order comes from two things: what other work depends on, and what services import most. Foundations come first because the rest of the library is written in their terms. Each is decided in [design/design_foundations.md](../design/design_foundations.md) (the need, the decision, what it replaces, what was rejected, what it unlocks), which also has the order of the steps and what each depends on.
+The order comes from two things: what other work depends on, and what services import most. Foundations come first because the rest of the library is written in their terms. Each is decided in [design/design_foundations.md](design_foundations.md) (the need, the decision, what it replaces, what was rejected, what it unlocks), which also has the order of the steps and what each depends on.
 
 **Foundations (decided; build in the order of that document):**
 

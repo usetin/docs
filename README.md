@@ -1,5 +1,9 @@
 # Tin documentation
 
+The documentation of Tin: the language and its toolchain live in
+[usetin/tin](https://github.com/usetin/tin). Check the pages (edition 1; every code block compiles)
+with `make check`, which needs a tin checkout (`TIN=/path/to/tin`, default `../tin`).
+
 | document | read it for |
 |---|---|
 | [LANGUAGE.md](LANGUAGE.md) | the language reference: every type, statement, expression, rule and error, plus the grammar |
@@ -14,7 +18,7 @@
 | [COVERAGE.md](COVERAGE.md) | every Go standard package and language feature with Tin's status (done, partial, missing, design, n/a) and the order to build the rest in |
 | [AGENT_PRIMER.md](AGENT_PRIMER.md) | a one-page brief to give an AI agent before it writes Tin code |
 
-Design decisions, interfaces and the roadmap live in [`../../design/`](../../design): the roadmap (`roadmap.md`), the
+Design decisions, interfaces and the roadmap live in [`design/`](design): the roadmap (`roadmap.md`), the
 decisions for the foundations (`design_foundations.md`), the semantics and syntax of Tin 1 (`design_semantics.md`,
 `design_syntax.md`), the interfaces between the parts (`interface_*.md`), the Linux ABI reference (`linux_abi.md`)
 and the stdlib verification against Go (`stdlib_verified.md`).
