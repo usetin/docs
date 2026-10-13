@@ -38,6 +38,7 @@ Generated from the comments in `toolchain/std/*/` and `packages/*/` by `tools/ge
 | [jsonv2](#jsonv2) | JSON Marshal and Unmarshal with options (encoding/json/v2) |
 | [flume](#flume) | buffered I/O (bufio) |
 | [quarry](#quarry) | files, environment, process (os) |
+| [mmap](#mmap) | memory mappings, madvise and pinned regions (sys/mman, syscall.Mmap) |
 | [debug](#debug) | binary formats of the executables Tin writes (debug/elf, debug/macho, debug/buildinfo) |
 | [debug/elf](#debug/elf) | ELF executable headers, sections, symbols and dynamic tables (debug/elf) |
 | [debug/macho](#debug/macho) | Mach-O executable headers, load commands, sections and symbols (debug/macho) |
@@ -1360,6 +1361,30 @@ Package quarry is the operating system interface (like Go's os): arguments, envi
 - `Exit(code i64)`: Exit flushes stdout and ends the program with status code.
 - `Eprint(s str)`: Eprint writes s to stderr.
 - `Eprintln(s str)`: Eprintln writes s and a newline to stderr in one write.
+
+## mmap
+
+Package mmap maps memory and hands it out as bytes: anonymous regions for a buffer pool, file ranges shared with the page cache, and the advice calls (madvise, msync, mprotect) a database uses to control them. A Region lives outside the runtime's pools and heaps: it is page-aligned, preallocated, and never scanned, moved or freed by the runtime, which is what a buffer pool needs. Linux arm64 and x86-64 use raw system calls; macOS uses libSystem.
+
+- `const ProtNone = 0`: Protection flags for MapAnon, MapFile and Protect, OR-ed together. The numbers are the same on Linux and macOS.
+- `const ProtRead = 1`
+- `const ProtWrite = 2`
+- `const ProtExec = 4`
+- `type Region value struct`: Region is a mapping: its address and length. It is a value struct, so a copy is another name for the same mapping and nothing is allocated to make or pass one. A Region's bytes must not be used after Unmap; the zero Region is not mapped.
+- `type Advice enum`: Advice is how a mapped range will be used, for Advise (POSIX_MADV_* and madvise).
+- `PageSize() i64`: PageSize is the OS mapping page size in bytes (4 KiB on Linux, 16 KiB on Apple silicon). A file mapping's offset and length must be multiples of it.
+- `MapAnon(n i64, prot i64) !Region`: MapAnon maps n bytes of zeroed anonymous memory for reading and writing (or whatever prot says), page-aligned and outside every runtime pool. Unmap it when done.
+- `MapAnonPopulate(n i64, prot i64) !Region`: MapAnonPopulate is MapAnon with the pages prefaulted (MAP_POPULATE on Linux), so a later write does not wait for a page fault; macOS has no MAP_POPULATE and does the same as MapAnon.
+- `MapFile(fd i64, off i64, n i64, prot i64, sharedMap bool) !Region`: MapFile maps n bytes of the file at fd starting at off, page-aligned (off must be a multiple of PageSize()). sharedMap selects MAP_SHARED (writes reach the file and other mappers) over MAP_PRIVATE (writes stay in this mapping). The descriptor must be open for the access prot asks for.
+- `(r Region) Addr() i64`: Addr is the mapping's address, for a call that needs it (an io_uring buffer, a sendfile).
+- `(r Region) Len() i64`: Len is the mapping's length in bytes.
+- `(r Region) Bytes() []u8`: Bytes is the mapping as a []u8 of its length. The slice is a view into long-lived memory (the runtime's region word is 2), so the runtime never frees the mapping, and append copies into the caller's pool instead of writing past it. The slice must not outlive the Region; each call makes one 32-byte slice header, so hoist it out of a loop.
+- `(r Region) Sync() !`: Sync writes the mapping's dirty pages to the file and waits (msync MS_SYNC). Only a MAP_SHARED file mapping has anything to write.
+- `(r Region) SyncAsync() !`: SyncAsync starts writing the mapping's dirty pages to the file without waiting (msync MS_ASYNC).
+- `(r Region) Advise(a Advice) !`: Advise tells the kernel how the mapped range will be used (madvise): Advice.WillNeed reads it ahead, Advice.DontNeed drops its pages (they are faulted in again as zeros for anonymous memory, or from the file for a file mapping), Advice.Sequential and Advice.Random tune readahead.
+- `(r Region) HugePage() !`: HugePage asks the kernel to back the mapping with huge pages where it can (madvise MADV_HUGEPAGE on Linux, a hint that a buffer pool should make for a large region). macOS has no huge-page advice, so it does nothing there.
+- `(r Region) Protect(prot i64) !`: Protect changes the mapping's protection (mprotect): a write to a range protected without ProtWrite panics, which guard turns into a fault.
+- `(r mut Region) Unmap() !`: Unmap releases the mapping. Every slice from Bytes is invalid afterwards; unmapping an already unmapped (zero) Region is a no-op.
 
 ## debug/elf
 
