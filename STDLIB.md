@@ -1940,9 +1940,13 @@ Package cairn is a set of containers: heaps, deques, a queue, sets, a bitset and
 Package stamp computes non-cryptographic hashes and checksums: FNV-1a, CRC-32 (IEEE and Castagnoli, slicing-by-8), Adler-32, xxHash64, and Hash, a fast 64-bit hash for tables.
 
 - `Crc32(s str) u32`: Crc32 is the IEEE CRC-32 of s (as in zip, gzip and PNG).
+- `Crc32Bytes(b []u8) u32`: Crc32Bytes is the IEEE CRC-32 of b, read in place (no string is made).
 - `Crc32Update(crc u32, s str) u32`: Crc32Update continues an IEEE CRC-32 over more data.
 - `Crc32UpdateBytes(crc u32, b []u8) u32`: Crc32UpdateBytes continues an IEEE CRC-32 over the bytes of b, read in place (no string is made).
 - `Crc32C(s str) u32`: Crc32C is the Castagnoli CRC-32 of s (as in iSCSI, ext4 and many databases).
+- `Crc32CBytes(b []u8) u32`: Crc32CBytes is the Castagnoli CRC-32 of b, read in place (no string is made).
+- `Crc32CUpdate(crc u32, s str) u32`: Crc32CUpdate continues a Castagnoli CRC-32 over more data.
+- `Crc32CUpdateBytes(crc u32, b []u8) u32`: Crc32CUpdateBytes continues a Castagnoli CRC-32 over the bytes of b, read in place (no string is made).
 - `Fnv32a(s str) u32`: Fnv32a is the 32-bit FNV-1a hash of s.
 - `Fnv64a(s str) u64`: Fnv64a is the 64-bit FNV-1a hash of s.
 - `Adler32(s str) u32`: Adler32 is the Adler-32 checksum of s (as in zlib).
