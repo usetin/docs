@@ -1319,6 +1319,8 @@ Package quarry is the operating system interface (like Go's os): arguments, envi
 - `(f File) TryLock() !bool`: TryLock takes the exclusive advisory lock without waiting and reports whether it got it; another process holding it is false, not a fault.
 - `(f File) Unlock() !`: Unlock releases the advisory lock this descriptor holds (flock LOCK_UN).
 - `SyncDir(path str) !`: SyncDir waits until the directory at path is on stable storage (open with ODirectory, fsync), which is the second half of a durable rename: rename the file, fsync the file, then SyncDir the directory that holds it. quarry.Rename is one renameat and already replaces atomically.
+- `WriteAt(path str, off i64, data []u8) !`: WriteAt writes data at off in the file at path (pwrite), which must exist: the file offset is never moved, so several lanes may write one file at once, and all of data is written or the call fails. Inside a request task the write runs on a helper thread (the core serves others), as quarry.ReadAt's read does; on a storage core or in a plain program it is one pwrite.
+- `DataSync(path str) !`: DataSync waits until the file's data at path is on stable storage (fdatasync), which is cheaper than quarry.Sync for a write-ahead log. macOS has no fdatasync: it does what Sync does (F_FULLFSYNC), which is stronger and never weaker. Inside a request task the wait runs on a helper thread; on a storage core or in a plain program it is one call.
 - `type FileType enum`: FileType is what a path is.
 - `type FileInfo struct`: FileInfo is what stat and lstat report about a path. Times are unix nanoseconds.
 - `type DirEntry struct`: DirEntry is a name in a directory with its type.
