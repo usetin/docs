@@ -1362,6 +1362,7 @@ Package quarry is the operating system interface (like Go's os): arguments, envi
 - `TempDir() str`: TempDir returns the directory for temporary files: $TMPDIR, or /tmp.
 - `Hostname() !str`: Hostname returns the machine's host name.
 - `Pid() i64`: Pid returns the process id.
+- `OnSignal(sig i64, h fn()) !`: OnSignal calls h serially in a detached task on this core, never in signal context; task-aware waits yield, but blocking calls stall this core.
 - `Exit(code i64)`: Exit flushes stdout and ends the program with status code.
 - `Eprint(s str)`: Eprint writes s to stderr.
 - `Eprintln(s str)`: Eprintln writes s and a newline to stderr in one write.
