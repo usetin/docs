@@ -86,7 +86,6 @@ Generated from the comments in `toolchain/std/*/` and `packages/*/` by `tools/ge
 | [s3](#s3) | S3-compatible object storage client with Signature Version 4 (aws-sdk-go-v2 s3) |
 | [atomic](#atomic) | counters and flags every core may change (sync/atomic) |
 | [lane](#lane) | a bounded queue between the tasks of one core (buffered channels) |
-| [latch](#latch) | exclusive and reader/writer latches that park a waiting task (sync.Mutex, sync.RWMutex) |
 | [replay](#replay) | recording and reading request capsules for tin replay |
 | [stencil](#stencil) | text templates loaded at run time (text/template) |
 | [htmltpl](#htmltpl) | HTML templates with contextual escaping (html/template) |
@@ -460,6 +459,7 @@ Package hearth runs a program on every core: one thread per core, each with its 
 - `Cores() i64`: Cores is the number of CPUs this program may use: the CPUs online, capped on Linux by the affinity mask (cpuset) and the cgroup CPU quota (ceil of cpu.max quota/period); never 0. It is how many cores to start (hearth.Run(hearth.Cores(), entry)), not how many run: relay.Cores() is the number started, and only those read their relay inbox.
 - `MemLimit() i64`: MemLimit is the memory limit in bytes the container (cgroup) imposes: 0 when there is none.
 - `ID() i64`: ID is the current core's number: 0 for the main core.
+- `Pin(cpu i64) bool`: Pin binds the calling thread (a core) to CPU cpu, so its work stops migrating between CPUs and a page cache or a WAL stays warm on one core (sched_setaffinity on Linux). It reports whether the CPU was accepted: a negative or unknown CPU is false, and so is a CPU the container's cpuset excludes. macOS has no thread affinity, so there it does nothing and reports true. Pinning is a hint the scheduler may still move a thread for load balancing; a task shares its core's thread, so this pins a core, not a task.
 - `Run(n i64, entry fn(i64))`: Run starts entry(i) on cores 1..n-1, runs entry(0) here, then waits for every core. Before starting it sizes the request pools to the memory limit and decides whether cores pin themselves to CPUs (only when they map one-to-one onto the allowed CPUs, or TIN_PIN=1). A program starts its cores once: a second Run that would start cores again panics (#858); run every step under one Run, core 0 handing the others work over relay.
 - `PoolChunk() i64`: PoolChunk is the request pool chunk size in bytes each core uses (after pool_tune).
 - `PoolCapacity() i64`: PoolCapacity is the usable size in bytes of this core's current base pool chunk (0 before its first request allocation).
@@ -1585,6 +1585,8 @@ Package tide is clocks, durations, civil (calendar) time and time zones, like Go
 - `Round(ns i64, d i64) i64`: Round returns ns rounded to the nearest multiple of d since the zero time, with halfway values rounding up, like Go's Time.Round; d <= 0 returns ns unchanged. A result outside Unix nanoseconds panics.
 - `AddDate(ns i64, z Zone, years i64, months i64, days i64) i64`: AddDate returns the instant years, months and days after ns in zone z, keeping the wall-clock fields like Go's Time.AddDate: January 31 plus one month lands in early March. Out-of-range fields carry the way DateIn does.
 - `ISOWeek(c Civil) (i64, i64)`: ISOWeek returns the ISO 8601 year and week (1 to 53) of the civil date, like Go's Time.ISOWeek: week 1 is the week holding the first Thursday of the year.
+- `CPUTime() i64`: CPUTime is the CPU time this thread has used, in nanoseconds (CLOCK_THREAD_CPUTIME_ID).
+- `ProcessCPUTime() i64`: ProcessCPUTime is the CPU time the whole process (every thread) has used, in nanoseconds (CLOCK_PROCESS_CPUTIME_ID).
 - `const Layout = "01/02 03:04:05PM '06 -0700"`: The standard layouts, as Go's time package names them.
 - `const ANSIC = "Mon Jan _2 15:04:05 2006"`
 - `const UnixDate = "Mon Jan _2 15:04:05 MST 2006"`
@@ -3174,25 +3176,6 @@ Package atomic has counters and flags that every core may change at once. Keep o
 - `(c Bool) Store(v bool)`: Store sets the flag to v.
 - `(c Bool) Swap(v bool) bool`: Swap sets the flag to v and returns the value it replaced.
 - `(c Bool) CompareSwap(old bool, next bool) bool`: CompareSwap sets the flag to next if it is old, and reports whether it did.
-- `(c Int) FetchAdd(n i64) i64`: FetchAdd adds n and returns the value before the addition (fetch-and-add; Add returns the value after it). On an LSE CPU the plain form is used here: FetchAdd is for a hot slot where the caller needs the previous value, as a ticket lock does.
-- `(c Int) LoadAcquire() i64`: LoadAcquire reads the value with acquire order: every load and store after it sees the stores that happened before the matching release store. The compiler has one load builtin, which is sequentially consistent (stronger than acquire), so this is that load; on arm64 it is an ldar.
-- `(c Int) StoreRelease(v i64)`: StoreRelease writes the value with release order: every store before it is visible to a task that sees this store with LoadAcquire. The compiler's store builtin is sequentially consistent (stronger than release); on arm64 it is an stlr.
-- `LoadAt(xs []i64, i i64) i64`: LoadAt reads the slot i of a shared []i64 (or any []i64 whose memory is shared) indivisibly. The slice's data pointer is read once, so the slot's address is stable; i must be in range.
-- `StoreAt(xs []i64, i i64, v i64)`: StoreAt writes v to slot i indivisibly.
-- `AddAt(xs []i64, i i64, n i64) i64`: AddAt adds n to slot i and returns the value after the addition (Go's AddInt64).
-- `FetchAddAt(xs []i64, i i64, n i64) i64`: FetchAddAt adds n to slot i and returns the value before the addition.
-- `SwapAt(xs []i64, i i64, v i64) i64`: SwapAt sets slot i to v and returns the value it replaced.
-- `CASAt(xs []i64, i i64, old i64, next i64) bool`: CASAt sets slot i to next if it is old, and reports whether it did (compare-and-swap). Retry on the value a caller reloads with LoadAt.
-- `type Counter struct`: Counter is an i64 counter whose block is padded to its own cache line, so counters a core each owns do not share a line with another core's (false sharing): a per-core counter array stays fast under load. NewCounter makes one. It is a reference like Int, so it goes in a `shared let` or in memory a core owns.
-- `NewCounter() Counter`: NewCounter returns a zero counter padded to its own cache line. The counter takes a 240-byte block, whose size class is 256 bytes, so two counters are at least 256 bytes apart and never share a 128-byte line (Apple silicon) or a 64-byte one (x86-64).
-- `(c Counter) Load() i64`: Load returns the counter's value.
-- `(c Counter) Store(v i64)`: Store sets the counter's value.
-- `(c Counter) Add(n i64) i64`: Add adds n and returns the value after the addition.
-- `(c Counter) FetchAdd(n i64) i64`: FetchAdd adds n and returns the value before the addition.
-- `(c Counter) Swap(v i64) i64`: Swap sets the value to v and returns the one it replaced.
-- `(c Counter) CompareSwap(old i64, next i64) bool`: CompareSwap sets the value to next if it is old, and reports whether it did.
-- `WaitAt(xs []i64, i i64, val i64, timeoutNs i64) i64`: WaitAt blocks the calling thread while slot i still holds val (the Linux futex wait), so another core's WakeAt on the same slot ends it; it returns 0 when woken, or an errno. It blocks the thread it runs on, so it is for a helper thread or a plain program, never for a task: a task waiting on a shared word uses latch (which parks and lets the core serve others). On macOS there is no futex: WaitAt rechecks the slot after a short sleep until it changes.
-- `WakeAt(xs []i64, i i64, n i64) i64`: WakeAt wakes up to n threads blocked in WaitAt on slot i (the Linux futex wake) and returns how many it woke. A task blocked in latch is not woken by it.
 
 ## lane
 
@@ -3211,24 +3194,6 @@ A worker ends its loop when the lane is closed and drained, and on nothing else:
 - `(l mut Lane[T]) Watch()`: Watch makes the next value or Close wake the running task without taking a value (select).
 - `(l mut Lane[T]) Unwatch()`: Unwatch withdraws Watch.
 - `(l Lane[T]) Len() i64`: Len is how many values wait in the lane.
-
-## latch
-
-Package latch has the locks a database takes for a short critical section (a page latch, a buffer header): an exclusive Mutex and a reader/writer RWMutex. Both spin briefly, then park the waiting task with a short timeout, so a core waiting on a latch keeps serving its other tasks and a task's deadline or cancellation still ends the wait with its fault. A latch is a reference (a pointer to one word), so one goes in a `shared let` and every core locks it; a latch in per-core memory is that core's own and must not be shared. Hold a latch for a short section and never across a wait that could be long: the holder is what other cores' tasks wait for.
-
-- `type Mutex struct`: Mutex is an exclusive latch: one holder at a time.
-- `New() Mutex`: New returns a free Mutex.
-- `(m Mutex) TryLock() bool`: TryLock takes the latch if it is free and reports whether it did, without waiting.
-- `(m Mutex) Lock() !`: Lock takes the latch, waiting until it is free. The wait parks the task (the core serves others) and ends with the task's deadline or cancellation as a fault.
-- `(m Mutex) Unlock()`: Unlock releases the latch; it must be held.
-- `type RWMutex struct`: RWMutex is a reader/writer latch: many readers or one writer. A waiting writer blocks new readers, so writers do not starve under a read-heavy load.
-- `NewRWMutex() RWMutex`: NewRWMutex returns a free RWMutex.
-- `(m RWMutex) TryRLock() bool`: TryRLock takes a read lock if no writer holds or waits, and reports whether it did.
-- `(m RWMutex) RLock() !`: RLock takes a read lock, waiting while a writer holds or waits for the latch. The wait parks the task like Lock's.
-- `(m RWMutex) RUnlock()`: RUnlock releases a read lock.
-- `(m RWMutex) TryLock() bool`: TryLock takes the write lock if no reader and no writer holds it, and reports whether it did.
-- `(m RWMutex) Lock() !`: Lock takes the write lock: it marks a writer as waiting (so new readers wait), waits for the readers to drain, then holds the latch. The wait parks the task like Lock's.
-- `(m RWMutex) Unlock()`: Unlock releases the write lock, leaving a waiting writer's mark in place. It must be held.
 
 ## replay
 
